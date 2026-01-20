@@ -1,11 +1,17 @@
-<script setup></script>
+<script setup>
+import AppMenu from './components/AppMenu.vue'
+import AppMessages from './components/AppMessages.vue'
+import BookList from './views/BookList.vue'
+import BookForm from './views/BookForm.vue'
+import AppAbout from './views/AppAbout.vue'
+</script>
 
 <template>
-  <h1>You did it!</h1>
-  <p>
-    Visit <a href="https://vuejs.org/" target="_blank" rel="noopener">vuejs.org</a> to read the
-    documentation
-  </p>
+  <AppMenu></AppMenu>
+  <AppMessages></AppMessages>
+  <BookList></BookList>
+  <BookForm></BookForm>
+  <AppAbout></AppAbout>
 </template>
 
 <style scoped></style>
