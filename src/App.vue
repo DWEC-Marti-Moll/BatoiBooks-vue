@@ -1,17 +1,13 @@
 <script setup>
 import { onMounted } from 'vue'
 import { store } from './stores/datos.js'
-
 import AppMenu from './components/AppMenu.vue'
 import AppMessages from './components/AppMessages.vue'
-import BookForm from './components/BookForm.vue'
-import BooksList from './components/BookList.vue'
-import AppAbout from './components/AppAbout.vue'
 import logo from '/logoBatoi.png' 
 
 onMounted(() => {
-    store.fetchBooks()
-    store.fetchModules()
+  // Carregar mòduls sempre (necessaris per al formulari)
+  store.fetchModules()
 })
 </script>
 
@@ -30,27 +26,13 @@ onMounted(() => {
     <AppMessages />
 
     <div class="main-container">
-        
-        <main class="content-area">
-            
-            <section class="books-section">
-                <BooksList />
-            </section>
-            
-            <div class="totales-bar">
-                <span>Total Libros: <strong>{{ store.totalLibros }}</strong></span>
-                <span>Importe Total: <strong>{{ store.importeTotal }} €</strong></span>
-            </div>
-
-            <section class="form-section">
-                <BookForm />
-            </section>
-
-        </main>
+      <router-view />
     </div>
 
     <footer>
-        <AppAbout />
+      <div class="footer-content">
+        <p>&copy; 2026 BatoiBooks. Todos los derechos reservados.</p>
+      </div>
     </footer>
   </div>
 </template>

@@ -27,13 +27,22 @@ export const store = reactive({
 
   async addBook(book) {
     try {
-      // Asigna imagen automática si no se proporciona (usando el mapa .jpg)
       if (!book.photo) {
         book.photo = getModuleImage(book.moduleCode)
       }
       await api.addDBBook({ ...book })
       await this.fetchBooks()
       this.addMessage('Libro añadido correctamente', 'success')
+    } catch (error) {
+      this.addMessage(error.message, 'error')
+    }
+  },
+
+  async updateBook(id, bookData) {
+    try {
+      await api.changeDBBook({ id, ...bookData })
+      await this.fetchBooks()
+      this.addMessage('Libro actualizado correctamente', 'success')
     } catch (error) {
       this.addMessage(error.message, 'error')
     }

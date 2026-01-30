@@ -1,34 +1,41 @@
 <script setup>
+import { useRouter } from 'vue-router'
 import { store } from '../stores/datos.js'
 import BookItem from './BookItem.vue'
 
-const eliminar = (book) => {
-    const mod = store.getModuleByCode(book.moduleCode)
-    const nombreModulo = mod ? mod.cliteral : 'Desconocido'
+const router = useRouter()
 
-    if (confirm(`¿Va a borrar el libro con ID: ${book.id} del módulo: ${nombreModulo}?`)) {
-        store.deleteBook(book.id)
-        store.addMessage(`Libro ${book.id} eliminado`)
-    }
+const eliminar = (book) => {
+  const mod = store.getModuleByCode(book.moduleCode)
+  const nombreModulo = mod ? mod.cliteral : 'Desconocido'
+
+  if (confirm(`¿Va a borrar el libro con ID: ${book.id} del módulo: ${nombreModulo}?`)) {
+    store.deleteBook(book.id)
+    store.addMessage(`Libro ${book.id} eliminado`)
+  }
+}
+
+const editar = (book) => {
+  router.push({ name: 'EditBook', params: { id: book.id } })
 }
 </script>
 
 <template>
-    <div class="books-grid-container">
-        <BookItem v-for="book in store.books" :key="book.id" :book="book">
-            <div class="actions">
-                <button class="btn-icon" disabled title="Próximamente">
-                    <span class="material-icons">add_shopping_cart</span>
-                </button>
-                <button class="btn-icon" disabled title="Próximamente">
-                    <span class="material-icons">edit</span>
-                </button>
-                <button class="btn-icon btn-delete" @click="eliminar(book)" title="Eliminar">
-                    <span class="material-icons">delete</span>
-                </button>
-            </div>
-        </BookItem>
-    </div>
+  <div class="books-grid-container">
+    <BookItem v-for="book in store.books" :key="book.id" :book="book">
+      <div class="actions">
+        <button class="btn-icon" disabled title="Próximamente">
+          <span class="material-icons">add_shopping_cart</span>
+        </button>
+        <button class="btn-icon" @click="editar(book)" title="Editar">
+          <span class="material-icons">edit</span>
+        </button>
+        <button class="btn-icon btn-delete" @click="eliminar(book)" title="Eliminar">
+          <span class="material-icons">delete</span>
+        </button>
+      </div>
+    </BookItem>
+  </div>
 </template>
 
 <style scoped>

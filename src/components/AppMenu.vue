@@ -1,11 +1,38 @@
+<script setup>
+import { useRoute } from 'vue-router'
+
+const route = useRoute()
+
+const isActive = (path) => {
+  return route.path === path
+}
+</script>
+
 <template>
-    <nav>
-        <ul>
-            <li><a href="#">Ver Libros</a></li>
-            <li><a href="#">Añadir Libro</a></li>
-            <li><a href="#">About</a></li>
-        </ul>
-    </nav>
+  <nav>
+    <ul>
+      <li>
+        <router-link :to="{ name: 'Books' }" :class="{ active: isActive('/books') || isActive('/') }">
+          Ver Libros
+        </router-link>
+      </li>
+      <li>
+        <router-link :to="{ name: 'AddBook' }" :class="{ active: isActive('/add-book') }">
+          Nuevo Libro
+        </router-link>
+      </li>
+      <li>
+        <router-link :to="{ name: 'Cart' }" :class="{ active: isActive('/cart') }">
+          Ver Carrito
+        </router-link>
+      </li>
+      <li>
+        <router-link :to="{ name: 'About' }" :class="{ active: isActive('/about') }">
+          About
+        </router-link>
+      </li>
+    </ul>
+  </nav>
 </template>
 
 <style scoped>
