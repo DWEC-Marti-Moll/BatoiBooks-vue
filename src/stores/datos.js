@@ -1,10 +1,16 @@
-import { reactive } from 'vue'
+import { reactive, onMounted } from 'vue'
 import * as api from '../services/api.js'
+
+// Cargar carrito desde localStorage al iniciar
+const loadCartFromStorage = () => {
+  const savedCart = localStorage.getItem('batoiBooksCart')
+  return savedCart ? JSON.parse(savedCart) : []
+}
 
 export const store = reactive({
   books: [],
   modules: [],
-  cart: [],
+  cart: loadCartFromStorage(),
   messages: [],
 
   // --- ACCIONES ---
@@ -52,11 +58,38 @@ export const store = reactive({
     try {
       await api.removeDBBook(id)
       await this.fetchBooks()
-      this.cart = this.cart.filter((b) => b.id !== id)
+      this.removeFromCart(id)
       this.addMessage('Libro eliminado correctamente', 'success')
     } catch (error) {
       this.addMessage(error.message, 'error')
     }
+  },
+
+  // --- GESTIÓN DEL CARRITO ---
+
+  addToCart(book) {
+    if (!this.isInCart(book.id)) {
+      this.cart.push({ ...book })
+      this.saveCartToStorage()
+    }
+  },
+
+  removeFromCart(bookId) {
+    this.cart = this.cart.filter((book) => book.id !== bookId)
+    this.saveCartToStorage()
+  },
+
+  clearCart() {
+    this.cart = []
+    this.saveCartToStorage()
+  },
+
+  isInCart(bookId) {
+    return this.cart.some((book) => book.id === bookId)
+  },
+
+  saveCartToStorage() {
+    localStorage.setItem('batoiBooksCart', JSON.stringify(this.cart))
   },
 
   // --- GESTIÓN DE MENSAJES ---
@@ -87,6 +120,10 @@ export const store = reactive({
   get importeTotal() {
     return this.books.reduce((acc, book) => acc + Number(book.price), 0).toFixed(2)
   },
+
+  get cartTotal() {
+    return this.cart.reduce((acc, book) => acc + Number(book.price), 0)
+  },
 })
 
 export function getModuleImage(moduleCode) {
@@ -101,5 +138,5 @@ export function getModuleImage(moduleCode) {
     1349: '9788448638900.jpg',
     1353: '9788448638986.jpg',
   }
-  return map[moduleCode] || '../../public/logoBatoi.png' || 'logoBatoi.png'
+  return map[moduleCode] || 'logoBatoi.png'
 }

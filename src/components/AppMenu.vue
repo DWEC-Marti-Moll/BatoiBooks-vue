@@ -1,5 +1,6 @@
 <script setup>
 import { useRoute } from 'vue-router'
+import { store } from '../stores/datos.js'
 
 const route = useRoute()
 
@@ -21,9 +22,10 @@ const isActive = (path) => {
           Nuevo Libro
         </router-link>
       </li>
-      <li>
+      <li class="cart-item">
         <router-link :to="{ name: 'Cart' }" :class="{ active: isActive('/cart') }">
-          Ver Carrito
+          <span class="material-icons">shopping_cart</span>
+          <span v-if="store.cart.length > 0" class="cart-badge">{{ store.cart.length }}</span>
         </router-link>
       </li>
       <li>
@@ -34,22 +36,3 @@ const isActive = (path) => {
     </ul>
   </nav>
 </template>
-
-<style scoped>
-nav { 
-  display: flex; 
-  gap: 24px; 
-}
-
-a { 
-  text-decoration: none; 
-  color: var(--text-muted); 
-  font-weight: 500; 
-  font-size: 0.95rem; 
-  transition: color 0.2s; 
-}
-
-a:hover, a.active { 
-  color: var(--primary); 
-}
-</style>

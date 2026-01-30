@@ -2127,6 +2127,7 @@
   ],
   "books": [
     {
+      "id": "1",
       "moduleCode": "5025",
       "publisher": "Apunts",
       "price": 12,
@@ -2135,9 +2136,10 @@
       "comment": "",
       "userId": 2,
       "soldDate": "",
-      "id": "1"
+      "comments": "Comentari"
     },
     {
+      "id": "6",
       "userId": 3,
       "moduleCode": "5021",
       "publisher": "McGraw-Hill",
@@ -2145,9 +2147,8 @@
       "pages": 273,
       "status": "new",
       "photo": "",
-      "comments": "Sense obrir",
-      "soldDate": "",
-      "id": "6"
+      "comments": "Obert",
+      "soldDate": ""
     },
     {
       "userId": 4,

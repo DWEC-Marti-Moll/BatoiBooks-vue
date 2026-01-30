@@ -139,3 +139,12 @@ export async function removeDBUser(id) {
     throw new Error('Error al eliminar el usuario')
   }
 }
+
+export async function checkoutBooks(cartData) {
+  try {
+    const response = await apiClient.post('/checkout', cartData)
+    return response.data
+  } catch (error) {
+    throw new Error('Error al procesar la compra')
+  }
+}
