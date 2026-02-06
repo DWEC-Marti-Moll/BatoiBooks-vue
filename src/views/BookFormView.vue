@@ -1,9 +1,11 @@
 <script setup>
-import { ref, watch, onMounted } from 'vue'
+import { ref, watch, onMounted, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useBooksStore } from '../stores/books.js'
 import { useModulesStore } from '../stores/modules.js'
 import { useMessagesStore } from '../stores/messages.js'
+import { useForm, useField } from 'vee-validate'
+import { bookSchema } from '../utils/validationSchema.js'
 
 const route = useRoute()
 const router = useRouter()
@@ -13,54 +15,80 @@ const messagesStore = useMessagesStore()
 
 const isEditing = ref(false)
 const bookId = ref(null)
-const book = ref({
-  moduleCode: '', 
-  publisher: '', 
-  price: 0, 
-  pages: 0, 
-  status: 'good', 
-  comments: ''
-})
-
+const isLoading = ref(false)
 const title = ref('Añadir Nuevo Libro')
 const buttonText = ref('Guardar Libro')
-const isLoading = ref(false)
+
+// Validació amb VeeValidate
+const { handleSubmit, resetForm: resetValidation, setValues, values } = useForm({
+  validationSchema: bookSchema,
+  initialValues: {
+    moduleCode: '',
+    publisher: '',
+    price: '',
+    pages: '',
+    status: 'good',
+    comments: ''
+  }
+})
+
+// Camps del formulari amb validació
+const { value: moduleCode, errorMessage: moduleCodeError } = useField('moduleCode')
+const { value: publisher, errorMessage: publisherError } = useField('publisher')
+const { value: price, errorMessage: priceError } = useField('price')
+const { value: pages, errorMessage: pagesError } = useField('pages')
+const { value: status, errorMessage: statusError } = useField('status')
+const { value: comments } = useField('comments')
+
+// Computed per detectar llibre duplicat
+const isDuplicateBook = computed(() => {
+  if (!isEditing.value && moduleCode.value && publisher.value) {
+    return booksStore.books.some(book => 
+      book.moduleCode === moduleCode.value && 
+      book.publisher.toLowerCase() === publisher.value.toLowerCase() &&
+      String(book.id) !== String(bookId.value)
+    )
+  }
+  return false
+})
 
 // Reset formulari
-const resetForm = () => {
-  book.value = { 
-    moduleCode: '', 
-    publisher: '', 
-    price: 0, 
-    pages: 0, 
-    status: 'good', 
-    comments: '' 
-  }
+const resetAll = () => {
+  setValues({
+    moduleCode: '',
+    publisher: '',
+    price: '',
+    pages: '',
+    status: 'good',
+    comments: ''
+  })
 }
 
-// Carregar llibre per editar (amb validació millorada)
+// Carregar llibre per editar
 const loadBook = async (id) => {
   isLoading.value = true
   try {
-    // Assegurar-se que els llibres estan carregats
     if (booksStore.books.length === 0) {
       await booksStore.fetchBooks()
     }
     
-    // Buscar el llibre (convertir a string per evitar problemes de tipus)
     const bookData = booksStore.getBookById(id)
-    
     if (bookData) {
-      book.value = { ...bookData }
-      console.log('Llibre carregat:', bookData)
+      // Omplir el formulari amb les dades existents
+      setValues({
+        moduleCode: bookData.moduleCode || '',
+        publisher: bookData.publisher || '',
+        price: bookData.price || '',
+        pages: bookData.pages || '',
+        status: bookData.status || 'good',
+        comments: bookData.comments || ''
+      })
+      bookId.value = id
     } else {
-      console.error('Llibre no trobat amb ID:', id)
-      console.log('Llibres disponibles:', booksStore.books.map(b => ({ id: b.id, title: b.title })))
       messagesStore.error('Libro no encontrado')
       router.push('/books')
     }
   } catch (error) {
-    console.error('Error al carregar el llibre:', error)
     messagesStore.error('Error al cargar el libro: ' + error.message)
     router.push('/books')
   } finally {
@@ -68,27 +96,33 @@ const loadBook = async (id) => {
   }
 }
 
-// Processar formulari
-const procesar = async () => {
+// Processar formulari (amb validació)
+const onSubmit = handleSubmit(async (formValues) => {
   try {
+    // Validar que no és duplicat (només en creació)
+    if (!isEditing.value && isDuplicateBook.value) {
+      messagesStore.error('Ya existe un libro con este módulo y editorial')
+      return
+    }
+    
     if (isEditing.value) {
-      await booksStore.updateBook(bookId.value, book.value)
+      await booksStore.updateBook(bookId.value, formValues)
       messagesStore.success('Libro actualizado correctamente')
     } else {
-      await booksStore.addBook({ ...book.value })
+      await booksStore.addBook(formValues)
       messagesStore.success('Libro añadido correctamente')
     }
     router.push('/books')
   } catch (error) {
     messagesStore.error(error.message)
   }
-}
+})
 
 // Inicialitzar formulari segons la ruta
 const initializeForm = async () => {
   if (route.name === 'EditBook' && route.params.id) {
     isEditing.value = true
-    bookId.value = route.params.id // Mantenir com a string
+    bookId.value = route.params.id
     title.value = 'Editar Libro'
     buttonText.value = 'Actualizar Libro'
     await loadBook(bookId.value)
@@ -97,7 +131,7 @@ const initializeForm = async () => {
     bookId.value = null
     title.value = 'Añadir Nuevo Libro'
     buttonText.value = 'Guardar Libro'
-    resetForm()
+    resetAll()
   }
 }
 
@@ -122,57 +156,76 @@ onMounted(() => {
     </div>
     <div v-else class="form-container">
       <h3>{{ title }}</h3>
-      <form @submit.prevent="procesar">
+      <form @submit.prevent="onSubmit">
         <div class="grid-form">
           <div class="form-group full-width">
-            <label>Módulo</label>
-            <select v-model="book.moduleCode" required>
+            <label>Módulo <span class="required">*</span></label>
+            <select v-model="moduleCode">
               <option value="" disabled>- Seleccionar -</option>
               <option v-for="mod in modulesStore.modules" :key="mod.code" :value="mod.code">
                 {{ mod.cliteral }}
               </option>
             </select>
+            <span v-if="moduleCodeError" class="error-message">{{ moduleCodeError }}</span>
           </div>
           
           <div class="form-group full-width">
-            <label>Editorial</label>
-            <input type="text" v-model="book.publisher" required placeholder="Ej: McGraw Hill"/>
+            <label>Editorial <span class="required">*</span></label>
+            <input 
+              type="text" 
+              v-model="publisher" 
+              placeholder="Ej: McGraw Hill"
+            />
+            <span v-if="publisherError" class="error-message">{{ publisherError }}</span>
+            <span v-if="isDuplicateBook" class="error-message duplicate-warning">
+              Ya existe un libro con este módulo y editorial
+            </span>
           </div>
 
           <div class="form-group">
-            <label>Precio (€)</label>
-            <input type="number" step="0.01" v-model="book.price" required min="0"/>
+            <label>Precio (€) <span class="required">*</span></label>
+            <input 
+              type="number" 
+              step="0.01" 
+              v-model="price" 
+            />
+            <span v-if="priceError" class="error-message">{{ priceError }}</span>
           </div>
 
           <div class="form-group">
-            <label>Páginas</label>
-            <input type="number" v-model="book.pages" required min="1"/>
+            <label>Páginas <span class="required">*</span></label>
+            <input 
+              type="number" 
+              v-model="pages" 
+            />
+            <span v-if="pagesError" class="error-message">{{ pagesError }}</span>
           </div>
 
           <div class="form-group full-width">
-            <label>Estado</label>
+            <label>Estado <span class="required">*</span></label>
             <div class="radios">
               <label class="radio-label">
-                <input type="radio" value="good" v-model="book.status"> Bueno
+                <input type="radio" value="good" v-model="status"> Bueno
               </label>
               <label class="radio-label">
-                <input type="radio" value="new" v-model="book.status"> Nuevo
+                <input type="radio" value="new" v-model="status"> Nuevo
               </label>
               <label class="radio-label">
-                <input type="radio" value="bad" v-model="book.status"> Malo
+                <input type="radio" value="bad" v-model="status"> Malo
               </label>
             </div>
+            <span v-if="statusError" class="error-message">{{ statusError }}</span>
           </div>
 
           <div class="form-group full-width">
             <label>Comentarios</label>
-            <textarea v-model="book.comments" rows="3" placeholder="Opcional..."></textarea>
+            <textarea v-model="comments" rows="3" placeholder="Opcional..."></textarea>
           </div>
         </div>
 
         <div class="form-actions">
           <button type="submit" class="btn-submit">{{ buttonText }}</button>
-          <button type="button" @click="resetForm" class="btn-reset">
+          <button type="button" @click="resetAll" class="btn-reset">
             {{ isEditing ? 'Recargar' : 'Limpiar' }}
           </button>
         </div>
@@ -182,7 +235,6 @@ onMounted(() => {
 </template>
 
 <style scoped>
-/* Estils sense canvis */
 .form-container {
   background: white;
   padding: 2rem;
@@ -217,6 +269,41 @@ h3 {
   color: var(--text);
 }
 
+.form-group input,
+.form-group select,
+.form-group textarea {
+  width: 100%;
+  padding: 10px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  font-size: 1rem;
+  transition: border-color 0.2s;
+}
+
+.form-group input:focus,
+.form-group select:focus,
+.form-group textarea:focus {
+  outline: none;
+  border-color: var(--primary);
+}
+
+.error-message {
+  display: block;
+  color: #ef4444;
+  font-size: 0.85rem;
+  margin-top: 4px;
+  font-weight: 500;
+}
+
+.duplicate-warning {
+  color: #f59e0b;
+}
+
+.required {
+  color: var(--primary);
+  margin-left: 4px;
+}
+
 .radios { 
   display: flex; 
   gap: 20px; 
@@ -232,9 +319,14 @@ h3 {
   color: var(--secondary);
 }
 
-.btn-submit {
+.form-actions {
+  display: flex;
+  gap: 12px;
   margin-top: 1.5rem;
-  width: 100%; 
+}
+
+.btn-submit {
+  flex: 1;
   background: var(--primary); 
   color: white; 
   border: none; 
@@ -248,5 +340,22 @@ h3 {
 
 .btn-submit:hover { 
   background: var(--primary-dark); 
+}
+
+.btn-reset {
+  flex: 1;
+  background: var(--border-light);
+  color: var(--text);
+  border: 1px solid var(--border);
+  padding: 12px;
+  font-size: 1rem;
+  font-weight: 600;
+  border-radius: var(--radius);
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.btn-reset:hover {
+  background: var(--border);
 }
 </style>
