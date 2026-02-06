@@ -1,10 +1,15 @@
 <script setup>
-import { ref, onMounted, watch } from 'vue'
+import { ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { store } from '../stores/datos.js'
+import { useBooksStore } from '../stores/books.js'
+import { useModulesStore } from '../stores/modules.js'
+import { useMessagesStore } from '../stores/messages.js'
 
 const route = useRoute()
 const router = useRouter()
+const booksStore = useBooksStore()
+const modulesStore = useModulesStore()
+const messagesStore = useMessagesStore()
 
 const isEditing = ref(false)
 const bookId = ref(null)
@@ -20,36 +25,35 @@ const book = ref({
 const title = ref('Añadir Nuevo Libro')
 const buttonText = ref('Guardar Libro')
 
-// Detectar si estem editant
-watch(() => route.params.id, async (newId) => {
-  if (newId) {
-    isEditing.value = true
-    bookId.value = parseInt(newId)
-    title.value = 'Editar Libro'
-    buttonText.value = 'Actualizar Libro'
-    await loadBook(bookId.value)
-  } else {
-    isEditing.value = false
-    title.value = 'Añadir Nuevo Libro'
-    buttonText.value = 'Guardar Libro'
-    resetForm()
-  }
-}, { immediate: true })
+// Watcher per detectar canvis a la ruta (afegir vs editar)
+watch(
+  () => route.name,
+  async (newRouteName) => {
+    if (newRouteName === 'EditBook' && route.params.id) {
+      isEditing.value = true
+      bookId.value = parseInt(route.params.id)
+      title.value = 'Editar Libro'
+      buttonText.value = 'Actualizar Libro'
+      await loadBook(bookId.value)
+    } else if (newRouteName === 'AddBook') {
+      isEditing.value = false
+      title.value = 'Añadir Nuevo Libro'
+      buttonText.value = 'Guardar Libro'
+      resetForm()
+    }
+  },
+  { immediate: true }
+)
 
 // Carregar llibre per editar
 const loadBook = async (id) => {
   try {
-    const bookData = store.books.find(b => b.id === id)
+    const bookData = booksStore.getBookById(id)
     if (bookData) {
       book.value = { ...bookData }
-    } else {
-      // Si no està al store, buscar a la API
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/books/${id}`)
-      const data = await response.json()
-      book.value = { ...data }
     }
   } catch (error) {
-    store.addMessage('Error al cargar el libro', 'error')
+    messagesStore.error('Error al cargar el libro')
   }
 }
 
@@ -57,14 +61,15 @@ const loadBook = async (id) => {
 const procesar = async () => {
   try {
     if (isEditing.value) {
-      await store.updateBook(bookId.value, book.value)
-      store.addMessage('Libro actualizado correctamente', 'success')
+      await booksStore.updateBook(bookId.value, book.value)
+      messagesStore.success('Libro actualizado correctamente')
     } else {
-      await store.addBook({ ...book.value })
+      await booksStore.addBook({ ...book.value })
+      messagesStore.success('Libro añadido correctamente')
     }
     router.push('/books')
   } catch (error) {
-    store.addMessage(error.message, 'error')
+    messagesStore.error(error.message)
   }
 }
 
@@ -95,7 +100,7 @@ const resetForm = () => {
             <label>Módulo</label>
             <select v-model="book.moduleCode" required>
               <option value="" disabled>- Seleccionar -</option>
-              <option v-for="mod in store.modules" :key="mod.code" :value="mod.code">
+              <option v-for="mod in modulesStore.modules" :key="mod.code" :value="mod.code">
                 {{ mod.cliteral }}
               </option>
             </select>

@@ -1,13 +1,15 @@
 <script setup>
 import { onMounted } from 'vue'
-import { store } from './stores/datos.js'
+import { useModulesStore } from './stores/modules.js'
 import AppMenu from './components/AppMenu.vue'
 import AppMessages from './components/AppMessages.vue'
 import logo from '/logoBatoi.png' 
 
+const modulesStore = useModulesStore()
+
 onMounted(() => {
-  // Carregar mòduls sempre (necessaris per al formulari)
-  store.fetchModules()
+  // Carregar mòduls sempre (necessaris per al formulari i targetes)
+  modulesStore.fetchModules()
 })
 </script>
 

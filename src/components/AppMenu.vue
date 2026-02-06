@@ -1,8 +1,9 @@
 <script setup>
 import { useRoute } from 'vue-router'
-import { store } from '../stores/datos.js'
+import { useCartStore } from '../stores/cart.js'
 
 const route = useRoute()
+const cartStore = useCartStore()
 
 const isActive = (path) => {
   return route.path === path
@@ -25,7 +26,7 @@ const isActive = (path) => {
       <li class="cart-item">
         <router-link :to="{ name: 'Cart' }" :class="{ active: isActive('/cart') }">
           <span class="material-icons">shopping_cart</span>
-          <span v-if="store.cart.length > 0" class="cart-badge">{{ store.cart.length }}</span>
+          <span v-if="cartStore.cartCount > 0" class="cart-badge">{{ cartStore.cartCount }}</span>
         </router-link>
       </li>
       <li>

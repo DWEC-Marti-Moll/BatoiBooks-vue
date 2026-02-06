@@ -1,11 +1,15 @@
 <script setup>
 import { onMounted } from 'vue'
-import { store } from '../stores/datos.js'
+import { useBooksStore } from '../stores/books.js'
+import { useModulesStore } from '../stores/modules.js'
 import BookList from '../components/BookList.vue'
 
+const booksStore = useBooksStore()
+const modulesStore = useModulesStore()
+
 onMounted(() => {
-  store.fetchBooks()
-  store.fetchModules()
+  booksStore.fetchBooks()
+  modulesStore.fetchModules()
 })
 </script>
 
@@ -15,8 +19,8 @@ onMounted(() => {
     <BookList />
     
     <div class="totales-bar">
-      <span>Total Libros: <strong>{{ store.totalLibros }}</strong></span>
-      <span>Importe Total: <strong>{{ store.importeTotal }} €</strong></span>
+      <span>Total Libros: <strong>{{ booksStore.totalBooks }} </strong></span>
+      <span>Importe Total: <strong>{{ booksStore.totalAmount }} €</strong></span>
     </div>
   </div>
 </template>

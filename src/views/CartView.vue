@@ -1,52 +1,56 @@
 <script setup>
-import { store } from '../stores/datos.js'
+import { useCartStore } from '../stores/cart.js'
+import { useBooksStore } from '../stores/books.js'
+import { useMessagesStore } from '../stores/messages.js'
 import BookItem from '../components/BookItem.vue'
 import { useRouter } from 'vue-router'
 
 const router = useRouter()
+const cartStore = useCartStore()
+const booksStore = useBooksStore()
+const messagesStore = useMessagesStore()
 
 const removeFromCart = (bookId) => {
-  store.removeFromCart(bookId)
-  store.addMessage('Libro eliminado del carrito', 'success')
+  cartStore.removeFromCart(bookId)
+  messagesStore.success('Libro eliminado del carrito')
 }
 
 const clearCart = () => {
   if (confirm('¿Está seguro de que quiere vaciar el carrito?')) {
-    store.clearCart()
-    store.addMessage('Carrito vaciado', 'success')
+    cartStore.clearCart()
+    messagesStore.success('Carrito vaciado')
   }
 }
 
 const checkout = async () => {
-  if (store.cart.length === 0) {
-    store.addMessage('El carrito está vacío', 'error')
+  if (cartStore.cartCount === 0) {
+    messagesStore.error('El carrito está vacío')
     return
   }
 
-  const total = store.cartTotal
+  const total = cartStore.cartTotal
   const firstDigit = parseInt(total.toString().charAt(0))
 
   try {
-    // Simular la compra
     const response = await fetch(`${import.meta.env.VITE_API_URL}/checkout`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        books: store.cart,
+        books: cartStore.cartItems,
         total: total
       })
     })
 
     if (firstDigit < 5) {
-      store.addMessage('❌ Transacción fallida: El primer dígito del importe es menor que 5', 'error')
+      messagesStore.error('❌ Transacción fallida: El primer dígito del importe es menor que 5')
     } else {
-      store.addMessage('✅ Compra realizada correctamente', 'success')
-      store.clearCart()
+      messagesStore.success('✅ Compra realizada correctamente')
+      cartStore.clearCart()
     }
   } catch (error) {
-    store.addMessage('Error al procesar la compra', 'error')
+    messagesStore.error('Error al procesar la compra')
   }
 }
 </script>
@@ -55,14 +59,14 @@ const checkout = async () => {
   <div class="cart-view">
     <h2>Carrito de Compra</h2>
     
-    <div v-if="store.cart.length === 0" class="empty-cart">
+    <div v-if="cartStore.cartCount === 0" class="empty-cart">
       <p>El carrito está vacío</p>
       <router-link to="/books" class="btn-primary">Ver libros</router-link>
     </div>
 
     <div v-else>
       <div class="cart-books">
-        <BookItem v-for="book in store.cart" :key="book.id" :book="book">
+        <BookItem v-for="book in cartStore.cartItems" :key="book.id" :book="book">
           <div class="cart-actions">
             <button 
               class="btn-icon btn-remove" 
@@ -78,11 +82,11 @@ const checkout = async () => {
       <div class="cart-summary">
         <div class="summary-row">
           <span>Total de libros:</span>
-          <strong>{{ store.cart.length }}</strong>
+          <strong>{{ cartStore.cartCount }}</strong>
         </div>
         <div class="summary-row">
           <span>Importe total:</span>
-          <strong>{{ store.cartTotal.toFixed(2) }} €</strong>
+          <strong>{{ cartStore.cartTotal.toFixed(2) }} €</strong>
         </div>
       </div>
 
@@ -97,6 +101,7 @@ const checkout = async () => {
     </div>
   </div>
 </template>
+
 <style scoped>
 .cart-view {
   padding: 2rem 0;

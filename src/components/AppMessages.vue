@@ -1,21 +1,23 @@
 <script setup>
-import { store } from '../stores/datos.js'
+import { useMessagesStore } from '../stores/messages.js'
+
+const messagesStore = useMessagesStore()
 </script>
 
 <template>
-    <div class="messages-container">
-        <transition-group name="fade">
-            <div 
-                v-for="(msg, index) in store.messages" 
-                :key="index" 
-                class="message-card"
-                :class="msg.type" 
-            >
-                <span class="text">{{ msg.text }}</span>
-                <button @click="store.removeMessage(index)" class="close-btn">×</button>
-            </div>
-        </transition-group>
-    </div>
+  <div class="messages-container">
+    <transition-group name="fade">
+      <div 
+        v-for="msg in messagesStore.allMessages" 
+        :key="msg.id" 
+        class="message-card"
+        :class="msg.type" 
+      >
+        <span class="text">{{ msg.text }}</span>
+        <button @click="messagesStore.removeMessage(msg.id)" class="close-btn">×</button>
+      </div>
+    </transition-group>
+  </div>
 </template>
 
 <style scoped>

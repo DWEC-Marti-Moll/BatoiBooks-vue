@@ -1,17 +1,20 @@
 <script setup>
 import { useRouter } from 'vue-router'
-import { store } from '../stores/datos.js'
+import { useBooksStore } from '../stores/books.js'
+import { useCartStore } from '../stores/cart.js'
+import { useMessagesStore } from '../stores/messages.js'
 import BookItem from './BookItem.vue'
 
 const router = useRouter()
+const booksStore = useBooksStore()
+const cartStore = useCartStore()
+const messagesStore = useMessagesStore()
 
 const eliminar = (book) => {
-  const mod = store.getModuleByCode(book.moduleCode)
-  const nombreModulo = mod ? mod.cliteral : 'Desconocido'
-
-  if (confirm(`¿Va a borrar el libro con ID: ${book.id} del módulo: ${nombreModulo}?`)) {
-    store.deleteBook(book.id)
-    store.addMessage(`Libro ${book.id} eliminado`)
+  const confirmDelete = confirm(`¿Va a borrar el libro con ID: ${book.id}?`)
+  if (confirmDelete) {
+    booksStore.deleteBook(book.id)
+    messagesStore.success(`Libro ${book.id} eliminado`)
   }
 }
 
@@ -20,23 +23,23 @@ const editar = (book) => {
 }
 
 const addToCart = (book) => {
-  store.addToCart(book)
-  store.addMessage(`Libro "${book.title || 'Libro #' + book.id}" añadido al carrito`, 'success')
+  cartStore.addToCart(book)
+  messagesStore.success(`Libro "${book.title || 'Libro #' + book.id}" añadido al carrito`)
 }
 </script>
 
 <template>
   <div class="books-grid-container">
-    <BookItem v-for="book in store.books" :key="book.id" :book="book">
+    <BookItem v-for="book in booksStore.books" :key="book.id" :book="book">
       <div class="actions">
         <button 
           class="btn-icon" 
           @click="addToCart(book)"
-          :disabled="store.isInCart(book.id)"
-          :title="store.isInCart(book.id) ? 'Ya en el carrito' : 'Añadir al carrito'"
+          :disabled="cartStore.isInCart(book.id)"
+          :title="cartStore.isInCart(book.id) ? 'Ya en el carrito' : 'Añadir al carrito'"
         >
           <span class="material-icons">
-            {{ store.isInCart(book.id) ? 'shopping_cart' : 'add_shopping_cart' }}
+            {{ cartStore.isInCart(book.id) ? 'shopping_cart' : 'add_shopping_cart' }}
           </span>
         </button>
         <button class="btn-icon" @click="editar(book)" title="Editar">

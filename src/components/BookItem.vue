@@ -1,6 +1,6 @@
 <script setup>
 import { defineProps } from 'vue'
-import { store, getModuleImage } from '../stores/datos.js'
+import { store } from '../stores/datos.js'
 
 defineProps(['book'])
 
@@ -10,7 +10,7 @@ const getModuleLiteral = (code) => {
 }
 
 const resolveImage = (book) => {
-    return book.photo || getModuleImage(book.moduleCode);
+    return book.photo;
 }
 </script>
 
@@ -20,7 +20,7 @@ const resolveImage = (book) => {
              <img 
                 :src="`/img/${resolveImage(book)}`" 
                 :alt="book.title" 
-                @error="$event.target.src='/img/logoBatoi.png'"
+                @error="$event.target.src='/logoBatoi.png'"
             />
         </div>
 
