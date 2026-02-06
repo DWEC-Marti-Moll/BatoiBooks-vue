@@ -16,7 +16,9 @@ export const useBooksStore = defineStore('books', {
     },
 
     getBookById: (state) => (id) => {
-      return state.books.find((book) => book.id === id)
+      // Comparar com a strings per evitar problemes de tipus
+      const idString = String(id)
+      return state.books.find((book) => String(book.id) === idString)
     },
   },
 

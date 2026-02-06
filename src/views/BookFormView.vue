@@ -1,5 +1,5 @@
 <script setup>
-import { ref, watch } from 'vue'
+import { ref, watch, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useBooksStore } from '../stores/books.js'
 import { useModulesStore } from '../stores/modules.js'
@@ -24,36 +24,47 @@ const book = ref({
 
 const title = ref('Añadir Nuevo Libro')
 const buttonText = ref('Guardar Libro')
+const isLoading = ref(false)
 
-// Watcher per detectar canvis a la ruta (afegir vs editar)
-watch(
-  () => route.name,
-  async (newRouteName) => {
-    if (newRouteName === 'EditBook' && route.params.id) {
-      isEditing.value = true
-      bookId.value = parseInt(route.params.id)
-      title.value = 'Editar Libro'
-      buttonText.value = 'Actualizar Libro'
-      await loadBook(bookId.value)
-    } else if (newRouteName === 'AddBook') {
-      isEditing.value = false
-      title.value = 'Añadir Nuevo Libro'
-      buttonText.value = 'Guardar Libro'
-      resetForm()
-    }
-  },
-  { immediate: true }
-)
+// Reset formulari
+const resetForm = () => {
+  book.value = { 
+    moduleCode: '', 
+    publisher: '', 
+    price: 0, 
+    pages: 0, 
+    status: 'good', 
+    comments: '' 
+  }
+}
 
-// Carregar llibre per editar
+// Carregar llibre per editar (amb validació millorada)
 const loadBook = async (id) => {
+  isLoading.value = true
   try {
+    // Assegurar-se que els llibres estan carregats
+    if (booksStore.books.length === 0) {
+      await booksStore.fetchBooks()
+    }
+    
+    // Buscar el llibre (convertir a string per evitar problemes de tipus)
     const bookData = booksStore.getBookById(id)
+    
     if (bookData) {
       book.value = { ...bookData }
+      console.log('Llibre carregat:', bookData)
+    } else {
+      console.error('Llibre no trobat amb ID:', id)
+      console.log('Llibres disponibles:', booksStore.books.map(b => ({ id: b.id, title: b.title })))
+      messagesStore.error('Libro no encontrado')
+      router.push('/books')
     }
   } catch (error) {
-    messagesStore.error('Error al cargar el libro')
+    console.error('Error al carregar el llibre:', error)
+    messagesStore.error('Error al cargar el libro: ' + error.message)
+    router.push('/books')
+  } finally {
+    isLoading.value = false
   }
 }
 
@@ -73,26 +84,43 @@ const procesar = async () => {
   }
 }
 
-// Reset formulari
-const resetForm = () => {
-  if (isEditing.value) {
-    loadBook(bookId.value)
-  } else {
-    book.value = { 
-      moduleCode: '', 
-      publisher: '', 
-      price: 0, 
-      pages: 0, 
-      status: 'good', 
-      comments: '' 
-    }
+// Inicialitzar formulari segons la ruta
+const initializeForm = async () => {
+  if (route.name === 'EditBook' && route.params.id) {
+    isEditing.value = true
+    bookId.value = route.params.id // Mantenir com a string
+    title.value = 'Editar Libro'
+    buttonText.value = 'Actualizar Libro'
+    await loadBook(bookId.value)
+  } else if (route.name === 'AddBook') {
+    isEditing.value = false
+    bookId.value = null
+    title.value = 'Añadir Nuevo Libro'
+    buttonText.value = 'Guardar Libro'
+    resetForm()
   }
 }
+
+// Watcher per canvis de ruta
+watch(
+  () => route.name,
+  async (newRouteName) => {
+    await initializeForm()
+  }
+)
+
+// Inicialitzar al muntar el component
+onMounted(() => {
+  initializeForm()
+})
 </script>
 
 <template>
   <div class="form-view">
-    <div class="form-container">
+    <div v-if="isLoading" class="loading">
+      Cargando...
+    </div>
+    <div v-else class="form-container">
       <h3>{{ title }}</h3>
       <form @submit.prevent="procesar">
         <div class="grid-form">
@@ -154,6 +182,7 @@ const resetForm = () => {
 </template>
 
 <style scoped>
+/* Estils sense canvis */
 .form-container {
   background: white;
   padding: 2rem;

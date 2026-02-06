@@ -1,16 +1,13 @@
 <script setup>
 import { defineProps } from 'vue'
-import { store } from '../stores/datos.js'
+import { useModulesStore } from '../stores/modules.js'
 
 defineProps(['book'])
 
-const getModuleLiteral = (code) => {
-    const m = store.getModuleByCode(code)
-    return m ? m.cliteral : code
-}
+const modulesStore = useModulesStore()
 
 const resolveImage = (book) => {
-    return book.photo;
+    return book.photo
 }
 </script>
 
@@ -25,7 +22,7 @@ const resolveImage = (book) => {
         </div>
 
         <div class="info">
-            <span class="badge">{{ getModuleLiteral(book.moduleCode) }}</span>
+            <span class="badge">{{ modulesStore.getModuleLiteral(book.moduleCode) }}</span>
             
             <h3>{{ book.title || 'Libro #' + book.id }}</h3>
             
